@@ -46,7 +46,7 @@ pipeline {
         }
         stage('Docker Build & Tag') {
             steps {
-                withDockerRegistry(credentialsId: 'docker-cred') {
+                withDockerRegistry(credentialsId: 'docker-cred', url: 'https://index.docker.io/v1/') {
                     sh "docker build -t senthilkumarsoundararajan/boardgame:latest ."
                 }
             }
@@ -58,7 +58,7 @@ pipeline {
         }
         stage('Docker Push') {
             steps {
-                withDockerRegistry(credentialsId: 'docker-cred') {
+                withDockerRegistry(credentialsId: 'docker-cred', url: 'https://index.docker.io/v1/') {
                     sh "docker push senthilkumarsoundararajan/boardgame:latest"
                 }
             }
