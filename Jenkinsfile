@@ -81,7 +81,7 @@ pipeline {
             emailext(
                 subject: "Pipeline: ${currentBuild.currentResult} - ${env.JOB_NAME}",
                 body: "Build ${env.BUILD_NUMBER} status: ${currentBuild.currentResult}",
-                to: 'your-email@gmail.com',
+                to: 'senthilhcltech2026@gmail.com',
                 attachmentsPattern: 'trivy-*.html'
             )
         }
