@@ -1,13 +1,17 @@
 pipeline {
     agent any
+
     tools {
         jdk 'jdk17'
         maven 'maven3'
     }
+
     environment {
         SCANNER_HOME = tool 'sonar-scanner'
     }
+
     stages {
+
         stage('Git Checkout') {
             steps {
                 git branch: 'main',
@@ -15,69 +19,87 @@ pipeline {
                 url: 'https://github.com/creativesenthil/Boardgame.git'
             }
         }
+
         stage('Compile') {
-            steps { sh 'mvn compile' }
+            steps {
+                sh 'mvn compile'
+            }
         }
+
         stage('Test') {
-            steps { sh 'mvn test' }
+            steps {
+                sh 'mvn test'
+            }
         }
+
         stage('File System Scan') {
             steps {
                 sh 'trivy fs --format table -o trivy-fs-report.html .'
             }
         }
+
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('sonar') {
-                    sh '''$SCANNER_HOME/bin/sonar-scanner \
-                        -Dsonar.projectName=BoardGame \
-                        -Dsonar.projectKey=BoardGame \
-                        -Dsonar.java.binaries=.'''
+                    sh '''
+                    $SCANNER_HOME/bin/sonar-scanner \
+                    -Dsonar.projectName=BoardGame \
+                    -Dsonar.projectKey=BoardGame \
+                    -Dsonar.java.binaries=.
+                    '''
                 }
             }
         }
+
         stage('Quality Gate') {
             steps {
                 waitForQualityGate abortPipeline: false
             }
         }
+
         stage('Build') {
-            steps { sh 'mvn package -DskipTests=true' }
+            steps {
+                sh 'mvn package -DskipTests=true'
+            }
         }
+
         stage('Docker Build & Tag') {
             steps {
                 withDockerRegistry(credentialsId: 'docker-cred', url: 'https://index.docker.io/v1/') {
-                    sh "docker build -t senthilkumarsoundararajan/boardgame:latest ."
+                    sh 'docker build -t senthilkumarsoundararajan/boardgame:latest .'
                 }
             }
         }
+
         stage('Trivy Image Scan') {
             steps {
-                sh "trivy image --format table -o trivy-image-report.html senthilkumarsoundararajan/boardgame:latest"
+                sh 'trivy image --format table -o trivy-image-report.html senthilkumarsoundararajan/boardgame:latest'
             }
         }
+
         stage('Docker Push') {
             steps {
                 withDockerRegistry(credentialsId: 'docker-cred', url: 'https://index.docker.io/v1/') {
-                    sh "docker push senthilkumarsoundararajan/boardgame:latest"
+                    sh 'docker push senthilkumarsoundararajan/boardgame:latest'
                 }
             }
         }
+
         stage('Deploy to Kubernetes') {
             steps {
-                // ✅ Fixed: added [] brackets
-                withKubeConfig([credentialsId: 'kube-config',
-                    clusterName: 'boardgame-cluster',
-                    namespace: 'webapps']) {
-                        // ✅ Fixed: removed broken pipe command
-                        sh 'kubectl apply -f deployment-service.yaml'
-                        sh 'kubectl rollout status deployment/boardgame-deployment -n webapps --timeout=120s'
-                        sh 'kubectl get pods -n webapps'
-                        sh 'kubectl get svc -n webapps'
-                }
+                // ✅ Debug (optional but useful)
+                sh 'whoami'
+                sh 'kubectl get nodes'
+
+                // ✅ Direct deployment (FIXED)
+                sh 'kubectl apply -f deployment-service.yaml'
+                sh 'kubectl rollout status deployment/boardgame-deployment -n webapps --timeout=120s'
+                sh 'kubectl get pods -n webapps'
+                sh 'kubectl get svc -n webapps'
             }
         }
     }
+
     post {
         always {
             emailext(
