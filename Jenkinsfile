@@ -63,6 +63,18 @@ pipeline {
                 }
             }
         }
+        stage('Deploy to Kubernetes') {
+            steps {
+                withKubeConfig(credentialsId: 'kube-config',
+                    clusterName: 'boardgame-cluster',
+                    namespace: 'webapps') {
+                        sh 'kubectl create namespace webapps --dry-run=client -o yaml | kubectl apply -f -'
+                        sh 'kubectl apply -f deployment-service.yaml'
+                        sh 'kubectl get pods -n webapps'
+                        sh 'kubectl get svc -n webapps'
+                }
+            }
+        }
     }
     post {
         always {
