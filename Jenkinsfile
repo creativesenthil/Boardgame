@@ -65,11 +65,13 @@ pipeline {
         }
         stage('Deploy to Kubernetes') {
             steps {
-                withKubeConfig(credentialsId: 'kube-config',
+                // ✅ Fixed: added [] brackets
+                withKubeConfig([credentialsId: 'kube-config',
                     clusterName: 'boardgame-cluster',
-                    namespace: 'webapps') {
-                        sh 'kubectl create namespace webapps --dry-run=client -o yaml | kubectl apply -f -'
+                    namespace: 'webapps']) {
+                        // ✅ Fixed: removed broken pipe command
                         sh 'kubectl apply -f deployment-service.yaml'
+                        sh 'kubectl rollout status deployment/boardgame-deployment -n webapps --timeout=120s'
                         sh 'kubectl get pods -n webapps'
                         sh 'kubectl get svc -n webapps'
                 }
